@@ -58,7 +58,10 @@ int main() {
     }
 
     // Register with the Naming Server
+   
     register_with_naming_server(sock, "Storage Server IP", CLIENT_PORT, "path1;path2;pathN");
+
+   
 
     // Create socket to listen for client requests
     int client_listener = socket(AF_INET, SOCK_STREAM, 0);
@@ -97,8 +100,14 @@ int main() {
 void register_with_naming_server(int sock, const char* ip, int client_port, const char* paths) {
     // Create a registration message with the format "REGISTER,IP,client_port,paths"
     char registration_message[BUFFER_SIZE];
-    snprintf(registration_message, sizeof(registration_message), "REGISTER,%s,%d,%s", ip, client_port, paths);
 
+    // Previous code line
+    // snprintf(registration_message, sizeof(registration_message), "REGISTER,%s,%d,%s", ip, client_port, paths);
+
+    //  Added NM_PORT to the message
+    snprintf(registration_message, sizeof(registration_message), "REGISTER,%s,%d,%d,%s", ip, NM_PORT, client_port, paths);
+
+    
     // Send the registration message to the Naming Server
     if (send(sock, registration_message, strlen(registration_message), 0) < 0) {
         perror("send failed");
