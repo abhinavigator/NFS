@@ -62,8 +62,9 @@ void insertPathToSS (pathToSS* HT, char* path, int SS)
     if (searchPathToSS(HT, path) >= 0) return;
     int val = hash(path);
     pathAssigned* it = HT->hashTable[val];
-    while (it->next != NULL) it = it->next;
+    pathAssigned* temp = it->next;
     pathToSS_node_init (it, path, SS);
+    it->next->next = temp;
     return;
 }
 

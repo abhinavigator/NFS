@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#define PORT 12345
+#define NM_PORT 12345
 #define BUFFER_SIZE 1024
 
 // Linked list node to store Storage Server information
@@ -13,7 +13,8 @@ typedef struct StorageServerNode {
     char ip_address[INET_ADDRSTRLEN];
     int nm_port;
     int client_port;
-    char paths[BUFFER_SIZE];
+    int ss_port;
+    char path[BUFFER_SIZE];
     struct StorageServerNode *next;
 } StorageServerNode;
 
@@ -22,13 +23,13 @@ StorageServerNode *head = NULL;
 int ss_count = 0;
 
 // Function to add a Storage Server to the list
-void add_storage_server(const char* ip, int nm_port, int client_port, const char* paths) {
+void add_storage_server(const char* ip, int nm_port, int client_port, const char* path) {
     StorageServerNode *new_node = (StorageServerNode *)malloc(sizeof(StorageServerNode));
     if (new_node) {
         strcpy(new_node->ip_address, ip);
         new_node->nm_port = nm_port;
         new_node->client_port = client_port;
-        strcpy(new_node->paths, paths);
+        strcpy(new_node->path, path);
         new_node->next = head;
         head = new_node;
         ss_count++;
@@ -92,7 +93,7 @@ int main() {
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+    address.sin_port = htons(NM_PORT);
 
     // Bind the socket to the address and port
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
@@ -106,7 +107,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Naming Server is running on port %d\n", PORT);
+    printf("Naming Server is running on port %d\n", NM_PORT);
     
     while (1) {
         printf("Waiting for connections...\n");
