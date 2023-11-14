@@ -4,8 +4,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <commstruct.h>
 
-#define NM_PORT 12345
+#define NM_PORT 10000
 #define BUFFER_SIZE 1024
 
 // Linked list node to store Storage Server information
@@ -42,7 +43,7 @@ void send_feedback_to_client(int client_sock, const char* feedback) {
 }
 
 // Function to handle new connections, assume it can differentiate between SS and client
-void handle_new_connection(int new_socket) {
+void handle_new_connection(int new_socket, commstruct* init_packet) {
     char buffer[BUFFER_SIZE] = {0};
     
     // Read details from the connection
@@ -89,7 +90,7 @@ int main() {
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
-    }
+    } 
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
@@ -108,7 +109,7 @@ int main() {
     }
 
     printf("Naming Server is running on port %d\n", NM_PORT);
-    
+    int next_port = NM_PORT + 1;
     while (1) {
         printf("Waiting for connections...\n");
         
@@ -117,9 +118,11 @@ int main() {
             perror("accept");
             continue;
         }
-        
+
+        commstruct init_packet;
+        recv(new_socket, &init_packet, sizeof(init_packet), 0);     
         // Handle the new connection
-        handle_new_connection(new_socket);
+        handle_new_connection(new_socket, &init_packet);
         
         // Close the socket
         close(new_socket);
