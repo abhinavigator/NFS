@@ -4,7 +4,7 @@
 #include "headers.h"
 
 
-#define NM_PORT 12345
+#define NM_PORT 10000
 #define NM_IP "127.0.0.1"
 #define CLIENT_PORT 54321 // Different for each SS
 #define BUFFER_SIZE 1024

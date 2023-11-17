@@ -3,20 +3,52 @@
 
 StorageServerNode *head = NULL;
 int ss_count = 0;
+int next_port = NM_PORT + 1;
+pathToSS* Hashtable;
 
+void* SSfunc(void* SS_thread_arg)                      // TO BE COMPLETED
+{
+    return NULL;
+}
+void find_new_port()
+{
+    int sockfd;
+    struct sockaddr_in server_addr;
+    while (true) {
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd == -1) {
+            perror("Socket creation failed");
+            exit(EXIT_FAILURE);
+        }
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_addr.s_addr = INADDR_ANY;
+        server_addr.sin_port = htons(next_port);
+        if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == 0) {
+            close(sockfd);
+            exit(EXIT_SUCCESS);
+        }
+        else next_port++;
 
-// Function to add a Storage Server to the list
-void add_storage_server(const char* ip, int nm_port, int client_port, const char* path) {
-    StorageServerNode *new_node = (StorageServerNode *)malloc(sizeof(StorageServerNode));
-    if (new_node) {
-        strcpy(new_node->ip_address, ip);
-        new_node->nm_port = nm_port;
-        new_node->client_port = client_port;
-        strcpy(new_node->path, path);
-        new_node->next = head;
-        head = new_node;
-        ss_count++;
     }
+}
+// Function to handle new connections, assume it can differentiate between SS and client
+void handle_new_connection(int new_socket, commstruct* init_packet) {
+    if (init_packet->type == SS) {
+        find_new_port();
+
+        commstruct* send_packet  = commstruct_init();
+        for (int i = 0; i < init_packet->num_args; i++) {
+            insertPathToSS(Hashtable, init_packet->data[i], ss_count);
+        }
+        StorageServerNode* newNode = add_storage_server("", NM_PORT, 1, init_packet->path);
+        SSthread_arg* ss_thread_arg = (SSthread_arg*)malloc(sizeof(SSthread_arg));
+        pthread_create(&(newNode->SSthread), 0, SSfunc, ss_thread_arg);
+        ss_count++;
+        send_packet->port = next_port;
+    
+        send(new_socket, init_packet, sizeof(commstruct), 0 );
+    }
+    return;
 }
 
 
@@ -25,7 +57,8 @@ int main() {
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    
+    Hashtable = (pathToSS*)malloc(sizeof(pathToSS));
+    pathToSS_init(Hashtable);
     // Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
@@ -55,7 +88,6 @@ int main() {
     }
 
     printf("Naming Server is running on port %d\n", NM_PORT);
-    int next_port = NM_PORT + 1;
     while (1) {
         printf("Waiting for connections...\n");
         
@@ -65,10 +97,10 @@ int main() {
             continue;
         }
 
-        commstruct init_packet;
-        recv(new_socket, &init_packet, sizeof(init_packet), 0);     
+        commstruct send_packet, recv_packet;;
+        recv(new_socket, &recv_packet, sizeof(recv_packet), 0);     
         // Handle the new connection
-        handle_new_connection(new_socket, &init_packet);
+        handle_new_connection(new_socket, &recv_packet);
         
         // Close the socket
         close(new_socket);

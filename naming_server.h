@@ -12,47 +12,32 @@ typedef struct StorageServerNode {
     int ss_port;
     char path[BUFFER_SIZE][PATH_LENGTH];
     struct StorageServerNode *next;
+    pthread_t SSthread;
+    sem_t SSsem;
 } StorageServerNode;
 
 extern StorageServerNode *head ;
-int ss_count;
-// Head of the linked list for Storage Servers
 
 
-
+typedef struct SSthread_arg {
+    int a;                      //  TO BE COMPLETED
+}SSthread_arg;
 // Function to send feedback to clients
 void send_feedback_to_client(int client_sock, const char* feedback) {
     send(client_sock, feedback, strlen(feedback), 0);
 }
 
-// Function to handle new connections, assume it can differentiate between SS and client
-void handle_new_connection(int new_socket, commstruct* init_packet) {
-    char buffer[BUFFER_SIZE] = {0};
-    
-    // Read details from the connection
-    read(new_socket, buffer, BUFFER_SIZE);
-    
-    // Check if it's from SS or client based on the data format
-    // This is a simplified example, in a real scenario you would use a more complex check
-    if (strstr(buffer, "REGISTER")) {
-        // Parse the details for the Storage Server and add to the list
-        // Assuming the format is "REGISTER,IP,nm_port,client_port,path1;path2;...;pathN"
-        char* token = strtok(buffer, ",");
-        token = strtok(NULL, ","); // Skip "REGISTER"
-        char* ip = token;
+// Function to add a Storage Server to the list
+StorageServerNode* add_storage_server(char* ip, int nm_port, int client_port, char* path) {
+    StorageServerNode *new_node = (StorageServerNode *)malloc(sizeof(StorageServerNode));
+    if (new_node) {
         
-        token = strtok(NULL, ",");
-        int nm_port = atoi(token);
-        
-        token = strtok(NULL, ",");
-        int client_port = atoi(token);
-        
-        token = strtok(NULL, ",");
-        char* paths = token;
-        
-        add_storage_server(ip, nm_port, client_port, paths);
-    } else {
-        // Assume it's a client request and provide feedback
-        send_feedback_to_client(new_socket, "Task completed successfully");
+        strcpy(new_node->ip_address, ip);
+        new_node->nm_port = nm_port;
+        new_node->client_port = client_port; 
+        strcpy(new_node->path[0], path);
+        new_node->next = head;
+        head = new_node;
+        return new_node;
     }
 }

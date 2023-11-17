@@ -10,15 +10,18 @@
 #include <arpa/inet.h>
 #include <fcntl.h> 
 #include <sys/stat.h> // For stat
+#include <pthread.h>
+#include <stdbool.h>
+#include <semaphore.h>
 
 
 
 #include "common.h"
 #include "commstruct.h"
 #include "hashtable.h"
-#include "storage_server.h"
+// #include "storage_server.h"
 #include "naming_server.h"
 
-void add_storage_server(const char* ip, int nm_port, int client_port, const char* path) ;
+StorageServerNode* add_storage_server(char* ip, int nm_port, int client_port, char* path) ;
 
 #endif

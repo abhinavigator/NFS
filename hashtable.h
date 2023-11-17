@@ -32,6 +32,7 @@ int hash(char* path)
 void pathToSS_init (pathToSS* HT)
 {
     for (int i = 0; i < MOD; i++) {
+        HT->hashTable[i] = (pathAssigned*)malloc(sizeof(pathAssigned));
         HT->hashTable[i]->next = NULL;
     }
     return;
