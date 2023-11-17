@@ -2,9 +2,29 @@
 
 
 StorageServerNode *head = NULL;
+
+// head = NULL;
+
+
+
 int ss_count = 0;
 int next_port = NM_PORT + 1;
 pathToSS* Hashtable;
+
+// Function to add a Storage Server to the list
+StorageServerNode* add_storage_server(char* ip, int nm_port, int client_port, char* path) {
+    StorageServerNode *new_node = (StorageServerNode *)malloc(sizeof(StorageServerNode));
+    if (new_node) {
+        
+        strcpy(new_node->ip_address, ip);
+        new_node->nm_port = nm_port;
+        new_node->client_port = client_port; 
+        strcpy(new_node->path[0], path);
+        new_node->next = head;
+        head = new_node;
+        return new_node;
+    }
+}
 
 void* SSfunc(void* SS_thread_arg)                      // TO BE COMPLETED
 {

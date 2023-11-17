@@ -6,6 +6,7 @@
 
 #define NM_PORT 10000
 #define NM_IP "127.0.0.1"
+#define SS_IP "192.168.0.1"
 #define CLIENT_PORT 54321 // Different for each SS
 #define BUFFER_SIZE 1024
 
@@ -14,22 +15,111 @@
 // void handle_client_requests(int client_sock);
 
 // Function definitions
-void register_with_naming_server(int sock, const char* ip, int client_port, const char* paths) {
-    // Create a registration message with the format "REGISTER,IP,client_port,paths"
-    char registration_message[BUFFER_SIZE];
+void findRelativePaths(const char *rootDir, const char *dirPath, char paths[BUFFER_SIZE][PATH_LENGTH], int *pathCount) {
+    DIR *dir;
+    struct dirent *entry;
 
-    // Previous code line
-    // snprintf(registration_message, sizeof(registration_message), "REGISTER,%s,%d,%s", ip, client_port, paths);
-
-    //  Added NM_PORT to the message
-    snprintf(registration_message, sizeof(registration_message), "REGISTER,%s,%d,%d,%s", ip, NM_PORT, client_port, paths);
-
-    
-    // Send the registration message to the Naming Server
-    if (send(sock, registration_message, strlen(registration_message), 0) < 0) {
-        perror("send failed");
-        exit(EXIT_FAILURE); // Exit if sending failed
+    if (!(dir = opendir(dirPath))) {
+        perror("opendir error");
+        return;
     }
+
+    size_t rootLen = strlen(rootDir);
+
+    while ((entry = readdir(dir)) != NULL) {
+
+          if (entry->d_name[0] == '.') {
+            // Skip hidden files/directories
+            continue;
+        }
+        
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+                continue;
+
+            char newPath[PATH_LENGTH];
+            snprintf(newPath, sizeof(newPath), "%s/%s", dirPath, entry->d_name);
+            findRelativePaths(rootDir, newPath, paths, pathCount);
+        } else if (entry->d_type == DT_REG) {
+            if (entry->d_name[0] != '.' && *pathCount < BUFFER_SIZE) {
+                char fullPath[PATH_LENGTH];
+                snprintf(fullPath, sizeof(fullPath), "%s/%s", dirPath, entry->d_name);
+                if (strncmp(fullPath, rootDir, rootLen) == 0) {
+                    printf("$ %s\n",fullPath + rootLen);
+                    strncpy(paths[*pathCount], fullPath + rootLen, PATH_LENGTH);
+                    (*pathCount)++;
+                } else {
+                    fprintf(stderr, "Error: Path does not match root directory.\n");
+                }
+            } else if (*pathCount >= BUFFER_SIZE) {
+                fprintf(stderr, "Buffer size exceeded. Unable to add more paths.\n");
+                break;
+            }
+        }
+    }
+    closedir(dir);
+}
+
+
+
+
+
+void register_with_naming_server() {
+    struct sockaddr_in serv_addr;
+    int sock = 0;
+
+    // Create socket and connect to Naming Server
+    // char paths[BUFFER_SIZE][PATH_LENGTH];
+
+    StorageServerNode node;
+    strcpy(node.ip_address, SS_IP);
+    node.client_port = CLIENT_PORT;
+    node.ss_port = SERVER_PORT;
+    node.nm_port = NM_PORT; 
+    
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("Socket creation error");
+        exit(EXIT_FAILURE);
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(NM_PORT);
+
+    if (inet_pton(AF_INET, NM_IP, &serv_addr.sin_addr) <= 0) {
+        perror("Invalid address/ Address not supported");
+        exit(EXIT_FAILURE);
+    }
+
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("Connection Failed");
+        exit(EXIT_FAILURE);
+    }
+
+    char currentDir[PATH_LENGTH];
+    if (getcwd(currentDir, sizeof(currentDir)) == NULL) {
+        perror("Error getting current directory");
+        exit(EXIT_FAILURE);
+    }
+    printf("$---> %s\n", currentDir);
+
+    char paths[BUFFER_SIZE][PATH_LENGTH];
+    int pathCount = 0;
+    findRelativePaths(currentDir, currentDir, paths, &pathCount);
+
+    node.num_paths = pathCount;
+
+    for (int i = 0; i < pathCount; ++i) {
+        strncpy(node.path[i], paths[i], PATH_LENGTH);
+    }
+    
+
+    // Now you can send 'node' to the server
+    if (send(sock, &node, sizeof(node), 0) < 0) {
+        perror("send failed");
+        exit(EXIT_FAILURE);
+    }
+
+    close(sock);
 }
 
 void handle_nm_commands(int nm_sock) {
