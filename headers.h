@@ -19,7 +19,7 @@
 #include "common.h"
 #include "commstruct.h"
 #include "hashtable.h"
-// #include "storage_server.h"
+#include "storage_server.h"
 #include "naming_server.h"
 
 StorageServerNode* add_storage_server(char* ip, int nm_port, int client_port, char* path) ;
