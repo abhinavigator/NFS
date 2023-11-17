@@ -9,6 +9,8 @@
 // #include <sys/sendfile.h> // For sendfile
 #include <sys/stat.h> // For stat
 
+// checking 
+
 #define NM_PORT 12345
 #define NM_IP "127.0.0.1"
 #define CLIENT_PORT 54321 // Different for each SS
