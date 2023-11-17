@@ -45,39 +45,6 @@ void delete_path(const char* path) {
     // Handle deletion error
 }
 
-
-
-void copy_file_or_directory(const char* source_ip, const char* source_path, const char* destination_path) {
-    // Implement logic to copy file or directory from another SS
-    // This could involve setting up a client connection to the source SS and requesting the file data
-    // Then, the data would be written to the destination path on the local SS
-    copy_file_from_ss(source_ip, NM_PORT, source_path, destination_path);
-}
-
-
-
-
-// Server-side: Function to serve a file to another SS
-void serve_file_to_ss(int server_sock, const char* file_path) {
-    send_file(server_sock, file_path);
-    int file_fd = open(file_path, O_RDONLY);
-    if (file_fd < 0) {
-        perror("Failed to open file to serve");
-        return;
-    }
-
-    struct stat file_stat;
-    if (fstat(file_fd, &file_stat) < 0) {
-        perror("Failed to get file stats");
-        close(file_fd);
-        return;
-    }
-
-    off_t offset = 0;
-    // send_file(server_sock, file_fd, &offset, file_stat.st_size);
-    close(file_fd);
-}
-
 // Client-side: Function to copy a file from another SS
 void copy_file_from_ss(const char* source_ip, int source_port, const char* source_file_path, const char* destination_file_path) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -127,6 +94,16 @@ void copy_file_from_ss(const char* source_ip, int source_port, const char* sourc
 }
 
 
+
+void copy_file_or_directory(const char* source_ip, const char* source_path, const char* destination_path) {
+    // Implement logic to copy file or directory from another SS
+    // This could involve setting up a client connection to the source SS and requesting the file data
+    // Then, the data would be written to the destination path on the local SS
+    copy_file_from_ss(source_ip, NM_PORT, source_path, destination_path);
+}
+
+
+
 // Function to send a file over a socket without using sendfile
 void send_file(int out_fd, const char* file_path) {
     int in_fd = open(file_path, O_RDONLY);
@@ -159,6 +136,30 @@ void send_file(int out_fd, const char* file_path) {
 
     close(in_fd);
 }
+
+
+// Server-side: Function to serve a file to another SS
+void serve_file_to_ss(int server_sock, const char* file_path) {
+    send_file(server_sock, file_path);
+    int file_fd = open(file_path, O_RDONLY);
+    if (file_fd < 0) {
+        perror("Failed to open file to serve");
+        return;
+    }
+
+    struct stat file_stat;
+    if (fstat(file_fd, &file_stat) < 0) {
+        perror("Failed to get file stats");
+        close(file_fd);
+        return;
+    }
+
+    off_t offset = 0;
+    // send_file(server_sock, file_fd, &offset, file_stat.st_size);
+    close(file_fd);
+}
+
+
 
 void write_to_file(const char* filename, const char* content) {
     // Assumes content is a null-terminated string
