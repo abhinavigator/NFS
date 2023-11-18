@@ -22,6 +22,7 @@
 #define NM_PORT 10000
 #define BUFFER_SIZE 1024
 #define PATH_LENGTH 1024
+#define IP "127.0.0.1"
 
 typedef struct {
     struct sockaddr_in address;

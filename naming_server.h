@@ -19,8 +19,12 @@ extern StorageServerNode *head ;
 
 
 typedef struct SSthread_arg {
-    int a;                      //  TO BE COMPLETED
+    int port;                      //  TO BE COMPLETED
 }SSthread_arg;
+
+typedef struct Clthread_arg {
+    int port;
+}Clthread_arg;
 // Function to send feedback to clients
 void send_feedback_to_client(int client_sock, const char* feedback) {
     send(client_sock, feedback, strlen(feedback), 0);

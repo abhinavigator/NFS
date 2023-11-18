@@ -2,7 +2,7 @@
 #include <stdlib.h> 
 #include <string.h>
 
-#define MAX_PATH_SIZE 1024
+#define MAX_PATH_SIZE 50
 #define MOD (int)(1e5 + 3)      // prime larger than 1e5
 #define HASH_PRIME (int)31
 
