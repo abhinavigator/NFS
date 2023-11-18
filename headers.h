@@ -31,8 +31,8 @@ typedef struct {
 
 #include "commstruct.h"
 #include "hashtable.h"
+#include "storage_server.h"
 #include "operations.h"
-// #include "storage_server.h"
 #include "naming_server.h"
 
 
