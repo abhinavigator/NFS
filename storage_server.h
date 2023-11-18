@@ -177,3 +177,81 @@
 
 
 // #endif
+// void perform_NM_Command(const char *path, const char *command)
+// {
+//     if (strcmp(command, "create_file") == 0)
+//     {
+//         // printf("path->> %s\n",path);
+//         FILE *file = fopen(path, "w");
+//         if (file != NULL)
+//         {
+//             fclose(file);
+//             printf("Created file: %s\n", path);
+//             // Respond back to the Naming Server indicating success or failure
+//         }
+//         else
+//         {
+//             printf("Failed to create file: %s\n", path);
+//             // Respond back with failure to Naming Server
+//         }
+//     }
+//     else if (strcmp(command, "create_directory") == 0)
+//     {
+//         if (mkdir(path, 0777) == 0)
+//         {
+//             printf("Created directory: %s\n", path);
+//             // Respond back to the Naming Server indicating success or failure
+//         }
+//         else
+//         {
+//             printf("Failed to create directory: %s\n", path);
+//             // Respond back with failure to Naming Server
+//         }
+//     }
+//     else if (strcmp(command, "delete") == 0)
+//     {
+//         if (remove(path) == 0)
+//         {
+//             printf("Deleted: %s\n", path);
+//             // Respond back to the Naming Server indicating success or failure
+//         }
+//         else
+//         {
+//             printf("Failed to delete: %s\n", path);
+//             // Respond back with failure to Naming Server
+//         }
+//     }
+//     // Handle other command types as needed
+// }
+
+// void handle_client_requests(int client_sock)
+// {
+//     // Implementation to handle client requests
+//     char buffer[1024];
+//     ssize_t bytes_read = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
+//     if (bytes_read > 0)
+//     {
+//         buffer[bytes_read] = '\0'; // Null-terminate the string
+//         // parse the buffer for requests like READ, WRITE, GET_INFO
+//         // For example, if the request is READ, call a read_file function
+//         char *command = strtok(buffer, ",");
+//         if (strcmp(command, "READ") == 0)
+//         {
+//             char *filename = strtok(NULL, ",");
+//             read_file(client_sock, filename);
+//         }
+//         else if (strcmp(command, "WRITE") == 0)
+//         {
+//             char *filename = strtok(NULL, ",");
+//             char *content = strtok(NULL, ""); // Read the rest of the buffer as content
+//             write_to_file(filename, content);
+//         }
+//         else if (strcmp(command, "INFO") == 0)
+//         {
+//             char *filename = strtok(NULL, ",");
+//             get_file_info(client_sock, filename);
+//         }
+//     }
+// }
+
+// #endif
