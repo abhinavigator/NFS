@@ -91,39 +91,41 @@ int main(int argc, char *argv[])
         {
             sendstr->operation = Write;
             printf("File to Write:");
+            scanf("%s", sendstr->path);
+            printf("What to write: ");
             scanf("%s", sendstr->data[0]);
         }
         else if (strcmp(oper, "r") == 0)
         {
             sendstr->operation = Read;
             printf("File to read:");
-            scanf("%s", sendstr->data[0]);
+            scanf("%s", sendstr->path);
         }
         else if (strcmp(oper, "d") == 0)
         {
             sendstr->operation = Delete;
             printf("Delete what:");
-            scanf("%s", sendstr->data[0]);
+            scanf("%s", sendstr->path);
         }
         else if (strcmp(oper, "c") == 0)
         {
             sendstr->operation = Copy;
             printf("Copy what");
-            scanf("%s", sendstr->data[0]);
+            scanf("%s", sendstr->path);
         }
         else if (strcmp(oper, "g") == 0)
         {
             sendstr->operation = Getsp;
             printf("Getsp of what:");
-            scanf("%s", sendstr->data[0]);
+            scanf("%s", sendstr->path);
         }
         else if (strcmp(oper, "n") == 0)
         {
             sendstr->operation = Create;
             printf("create Where:");
-            scanf("%s", sendstr->data[0]);
+            scanf("%s", sendstr->path);
             printf("Create What");
-            scanf("%s", sendstr->data[1]);
+            scanf("%s", sendstr->data[0]);
         }
     }
 }

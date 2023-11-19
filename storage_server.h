@@ -61,67 +61,6 @@
 // }
 
 
-
-
-
-// void register_with_naming_server() {
-//     struct sockaddr_in serv_addr;
-//     int sock = 0;
-
-//     // Create socket and connect to Naming Server
-//     // char paths[BUFFER_SIZE][PATH_LENGTH];
-
-//     StorageServerNode node;
-//     strcpy(node.ip_address, SS_IP);
-//     node.client_port = CLIENT_PORT;
-//     node.ss_port = SERVER_PORT;
-//     node.nm_port = NM_PORT; 
-    
-//     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-//         perror("Socket creation error");
-//         exit(EXIT_FAILURE);
-//     }
-
-//     serv_addr.sin_family = AF_INET;
-//     serv_addr.sin_port = htons(NM_PORT);
-
-//     if (inet_pton(AF_INET, NM_IP, &serv_addr.sin_addr) <= 0) {
-//         perror("Invalid address/ Address not supported");
-//         exit(EXIT_FAILURE);
-//     }
-
-//     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-//         perror("Connection Failed");
-//         exit(EXIT_FAILURE);
-//     }
-
-//     char currentDir[PATH_LENGTH];
-//     if (getcwd(currentDir, sizeof(currentDir)) == NULL) {
-//         perror("Error getting current directory");
-//         exit(EXIT_FAILURE);
-//     }
-//     printf("$---> %s\n", currentDir);
-
-//     char paths[BUFFER_SIZE][PATH_LENGTH];
-//     int pathCount = 0;
-//     findRelativePaths(currentDir, currentDir, paths, &pathCount);
-
-//     node.num_paths = pathCount;
-
-//     for (int i = 0; i < pathCount; ++i) {
-//         strncpy(node.path[i], paths[i], PATH_LENGTH);
-//     }
-    
-
-//     // Now you can send 'node' to the server
-//     if (send(sock, &node, sizeof(node), 0) < 0) {
-//         perror("send failed");
-//         exit(EXIT_FAILURE);
-//     }
-
-//     close(sock);
-// }
-
 // void handle_nm_commands(int nm_sock) {
 //     char buffer[BUFFER_SIZE];
 //     ssize_t bytes_read = recv(nm_sock, buffer, sizeof(buffer) - 1, 0);
@@ -224,34 +163,6 @@
 //     // Handle other command types as needed
 // }
 
-// void handle_client_requests(int client_sock)
-// {
-//     // Implementation to handle client requests
-//     char buffer[1024];
-//     ssize_t bytes_read = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
-//     if (bytes_read > 0)
-//     {
-//         buffer[bytes_read] = '\0'; // Null-terminate the string
-//         // parse the buffer for requests like READ, WRITE, GET_INFO
-//         // For example, if the request is READ, call a read_file function
-//         char *command = strtok(buffer, ",");
-//         if (strcmp(command, "READ") == 0)
-//         {
-//             char *filename = strtok(NULL, ",");
-//             read_file(client_sock, filename);
-//         }
-//         else if (strcmp(command, "WRITE") == 0)
-//         {
-//             char *filename = strtok(NULL, ",");
-//             char *content = strtok(NULL, ""); // Read the rest of the buffer as content
-//             write_to_file(filename, content);
-//         }
-//         else if (strcmp(command, "INFO") == 0)
-//         {
-//             char *filename = strtok(NULL, ",");
-//             get_file_info(client_sock, filename);
-//         }
-//     }
-// }
+
 
 // #endif
