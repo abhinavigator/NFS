@@ -14,6 +14,7 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <semaphore.h>
+// #include <math.h>
 
 
 
@@ -37,6 +38,6 @@ typedef struct {
 #include "naming_server.h"
 
 
-StorageServerNode* add_storage_server(char* ip, int nm_port, int client_port, char* path) ;
+StorageServerNode* add_storage_server(char* ip, int nm_port, int client_port, char* path, int num) ;
 
 #endif

@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h> 
 
-#define MAX_ARGS 50
-#define MAX_ARGS_LENGTH 50
-#define MAX_PATH_SIZE 50
+#define MAX_ARGS 10
+#define MAX_ARGS_LENGTH 100
+#define MAX_PATH_SIZE 100
 
 typedef enum ServerType {
     NM,
@@ -28,7 +28,10 @@ typedef struct commstruct {
     char path[MAX_PATH_SIZE];
     char ip[INET_ADDRSTRLEN];
     int port;
+    int port2;
     int num_args;
+    int filesize;
+    int ack;
 }commstruct;
 
 commstruct* commstruct_init ()
@@ -37,6 +40,8 @@ commstruct* commstruct_init ()
     new->port = 0;
     new->type = -1;
     new->num_args = 0;
+    new->ack=0;
     new->operation = -1;
+    new->filesize=0;
     return new;
 }

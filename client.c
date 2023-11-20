@@ -12,14 +12,14 @@
 // More function implementations
 int main(int argc, char *argv[])
 {
-    int sock;
+    int sock_NM_C;
     struct sockaddr_in addr;
     socklen_t addr_size;
     int n;
 
     // Create socket
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
+    sock_NM_C = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_NM_C < 0)
     {
         perror("[-]Socket error");
         exit(1);
@@ -33,10 +33,10 @@ int main(int argc, char *argv[])
     addr.sin_addr.s_addr = inet_addr(IP);
     inet_pton(AF_INET, IP, &addr.sin_addr);
     // Connect to the server
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    if (connect(sock_NM_C, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
         perror("[-]Connection error");
-        close(sock); // Close the socket
+        close(sock_NM_C); // Close the socket
         exit(1);
     }
     printf("Connected to the server.\n");
@@ -48,37 +48,38 @@ int main(int argc, char *argv[])
 
     // scanf("%s", buffer);
     // if (send(sock,buffer,strlen(buffer)+1,0));
-    if (send(sock, sendstr, sizeof(commstruct), 0) < 0)
+    if (send(sock_NM_C, sendstr, sizeof(commstruct), 0) < 0)
     {
         perror("[-]Send error");
-        close(sock); // Close the socket
+        close(sock_NM_C); // Close the socket
         exit(1);
     }
     printf("%d\n", sendstr->num_args);
 
-    recv(sock, recvstr, sizeof(commstruct), 0);
+    recv(sock_NM_C, recvstr, sizeof(commstruct), 0);
     printf("%d--\n", recvstr->port);
-    close(sock);
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
+    close(sock_NM_C);
+    sock_NM_C = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_NM_C < 0)
     {
         perror("[-]Socket error");
         exit(1);
     }
     printf("[+]TCP server socket created.\n");
-    
+
     // Set up server address
+    int store_sock = recvstr->port;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(recvstr->port); // Use htons to convert to network byte order
     addr.sin_addr.s_addr = inet_addr(IP);
-    printf("%d\n",recvstr->port);
-    inet_pton(AF_INET,IP,&addr.sin_addr);
+    printf("%d\n", recvstr->port);
+    inet_pton(AF_INET, IP, &addr.sin_addr);
     usleep(1000);
     // Connect to the server
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    if (connect(sock_NM_C, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
         perror("[-]Connection error");
-        close(sock); // Close the socket
+        close(sock_NM_C); // Close the socket
         exit(1);
     }
     while (true)
@@ -127,5 +128,81 @@ int main(int argc, char *argv[])
             printf("Create What");
             scanf("%s", sendstr->data[0]);
         }
+        else
+        {
+            printf("Illegal command\n");
+            continue;
+        }
+        printf("a\n");
+        if (send(sock_NM_C, sendstr, sizeof(commstruct), 0) < 0)
+        {
+            printf("here\n");
+            perror("[-]Send error");
+            close(sock_NM_C); // Close the socket
+            exit(1);
+        }
+        printf("b\n");
+        recv(sock_NM_C, recvstr, sizeof(commstruct), 0);
+        printf("c\n");
+        // close(sock);
+        int sock_SS_C = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock_SS_C < 0)
+        {
+            perror("[-]Socket error");
+            exit(1);
+        }
+        printf("[+]TCP server socket created.\n");
+
+        // Set up server address
+        usleep(1000);
+        printf("%d\n",recvstr->port);
+        int store_sock = recvstr->port;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(recvstr->port); // Use htons to convert to network byte order
+        addr.sin_addr.s_addr = inet_addr(IP);
+        if (connect(sock_SS_C, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+        {
+            perror("[-]Connection error");
+            close(sock_SS_C); // Close the socket
+            exit(1);
+        }
+        if (send(sock_SS_C, sendstr, sizeof(commstruct), 0) < 0)
+        {
+            perror("[-]Send error");
+            close(sock_SS_C); // Close the socket
+            exit(1);
+        }
+        printf("yay\n");
+        if(sendstr->operation==Read)
+        {
+            commstruct * size1=commstruct_init();
+            recv(sock_SS_C, size1, sizeof(commstruct), 0);
+            int iterations=size1->filesize;
+            for(int i=0;i<iterations;i++)
+            {
+                recv(sock_SS_C, size1, sizeof(commstruct), 0);
+                printf("%s",size1->data[0]);
+                strcpy(size1->data[0],"");
+            }
+            printf("\n");
+        }
+        commstruct * ack1=commstruct_init();
+        if(recv(sock_SS_C, ack1, sizeof(commstruct), 0)<=0)
+        {
+            printf("ERROR in receiving acknowledgement struct\n");
+            // Send acknowledgement if required over here
+            // continue;
+        }
+        else
+        {
+            if(sendstr->operation==Getsp)
+            {
+                printf("%s",ack1->data[0]);
+                strcpy(ack1->data[0],"");
+            }
+            printf("Command successfully executed\n");
+        }
+        close(sock_SS_C);
     }
+    close(sock_NM_C);
 }

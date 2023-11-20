@@ -4,6 +4,7 @@
 
 // Linked list node to store Storage Server information
 typedef struct StorageServerNode {
+    int ss_num;
     char ip_address[INET_ADDRSTRLEN];
     int nm_port;
     int client_port;
@@ -15,11 +16,14 @@ typedef struct StorageServerNode {
     sem_t SSsem;
 } StorageServerNode;
 
+
+
 extern StorageServerNode *head ;
 
 
 typedef struct SSthread_arg {
     int port;                      //  TO BE COMPLETED
+    int port2;
 }SSthread_arg;
 
 typedef struct Clthread_arg {
