@@ -14,6 +14,7 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <semaphore.h>
+#include <sys/wait.h>
 // #include <math.h>
 
 

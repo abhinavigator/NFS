@@ -123,10 +123,12 @@ int main(int argc, char *argv[])
         else if (strcmp(oper, "n") == 0)
         {
             sendstr->operation = Create;
-            printf("create Where:");
+            printf("Create Where:");
             scanf("%s", sendstr->path);
-            printf("Create What");
+            printf("Create What:");
             scanf("%s", sendstr->data[0]);
+            printf("File(f) or Directory(d):");
+            scanf("%s",(sendstr->fileflag));
         }
         else
         {
@@ -144,7 +146,8 @@ int main(int argc, char *argv[])
         printf("b\n");
         int sock_SS_C = socket(AF_INET, SOCK_STREAM, 0);
 
-        if (sendstr->operation == Create || sendstr->operation == Write || sendstr->operation == Getsp){
+        if (sendstr->operation == Read || sendstr->operation == Write || sendstr->operation == Getsp)
+        {
             recv(sock_NM_C, recvstr, sizeof(commstruct), 0);
             printf("c\n");
             // close(sock);
@@ -188,19 +191,39 @@ int main(int argc, char *argv[])
                 }
                 printf("\n");
             }
-        }
-        commstruct *ack1 = commstruct_init();
-        if (recv(sock_SS_C, ack1, sizeof(commstruct), 0) <= 0)
-        {
-            printf("ERROR in receiving acknowledgement struct\n");
-            // Send acknowledgement if required over here
-            // continue;
+            commstruct *ack1 = commstruct_init();
+            if (recv(sock_SS_C, ack1, sizeof(commstruct), 0) <= 0)
+            {
+                printf("ERROR in receiving acknowledgement struct\n");
+                // Send acknowledgement if required over here
+                // continue;
+            }
+            else
+            {
+                if(sendstr->operation==Getsp)
+                {
+                    printf("%s",ack1->data[0]); // printf the getsp
+                    strcpy(ack1->data[0],"");
+                }
+                printf("Command successfully executed\n");
+            }
+            close(sock_SS_C);
         }
         else
         {
-            printf("Command successfully executed\n");
+            commstruct *ack1 = commstruct_init();
+            if (recv(sock_NM_C, ack1, sizeof(commstruct), 0) <= 0)
+            {
+                printf("ERROR in receiving acknowledgement struct\n");
+                // Send acknowledgement if required over here
+                // continue;
+            }
+            else
+            {
+                printf("Command successfully executed\n");
+            }
         }
-        close(sock_SS_C);
+        
     }
     close(sock_NM_C);
 }

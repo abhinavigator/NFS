@@ -32,6 +32,7 @@ typedef struct commstruct {
     int num_args;
     int filesize;
     int ack;
+    char fileflag[2];
 }commstruct;
 
 commstruct* commstruct_init ()

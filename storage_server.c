@@ -81,10 +81,61 @@ int Readfunctionality(commstruct *C, int new_socket)
     return 0;
 }
 
+int Createfunctionality(commstruct *C)
+{
+    if (1)
+    {
+        pid_t pid = fork();
+        if (pid == -1)
+        {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+
+        if (pid == 0)
+        {
+            // Child process
+            if (chdir(C->path) < 0)
+                printf("Error changing directory\n");
+            if (strcmp(C->fileflag, "d") == 0)
+            {
+                char *args[] = {"mkdir", C->data[0], NULL};
+                if (execvp(args[0], args) == -1)
+                {
+                    perror("execvp");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            else
+            {
+                int fd = open(C->data[0], O_CREAT | O_WRONLY | O_TRUNC, 0666);
+
+                if (fd == -1)
+                {
+                    // Handle error if open fails
+                    perror("open");
+                    return 1; // Exit with an error code
+                }
+
+                // Close the file descriptor
+                close(fd);
+                exit(0);
+            }
+        }
+        else
+        {
+            int status;
+            waitpid(pid, &status, 0);
+            printf("File/Directory created successfully\n");
+        }
+    }
+}
+
 void *thread_func(void *SS_thread_arg)
 {
     thread_arg *arg = (thread_arg *)SS_thread_arg;
-    int server_fd, new_socket;
+    int nm_ss_port = arg->port;
+    int server_fd, server_fd1, new_socket;
     struct sockaddr_in address, claddr;
     socklen_t addrlen = sizeof(address);
     // Creating socket file descriptor
@@ -126,7 +177,7 @@ void *thread_func(void *SS_thread_arg)
             if (new_socket < 0)
             {
                 perror("accept");
-                continue;
+                // continue;
             }
             printf("hi\n");
             commstruct *send_packet = commstruct_init(), *recv_packet = commstruct_init();
@@ -204,24 +255,29 @@ void *thread_func(void *SS_thread_arg)
                     printf("Error-File path doesnt exist\n");
                 }
             }
+            break;
         }
     }
-    else 
+    else
     {
+        printf("Create\n");
         int sock = arg->nm_sock;
         commstruct *send_packet = commstruct_init(), *recv_packet = commstruct_init();
-        recv(sock,send_packet, sizeof(commstruct),0);
-        if (recv_packet->operation == Delete) {
-
+        recv(sock, recv_packet, sizeof(commstruct), 0);
+        printf("Op: %d", recv_packet->operation);
+        if (recv_packet->operation == Delete)
+        {
         }
-        else if (recv_packet->operation == Create) {
-
+        else if (recv_packet->operation == Create)
+        {
+            printf("Create inside\n");
+            Createfunctionality(recv_packet);
         }
-        else if (recv_packet->operation == Copy){
-
+        else if (recv_packet->operation == Copy)
+        {
         }
         send_packet->ack = 1;
-        send(sock,send_packet,sizeof(send_packet),0);
+        send(sock, send_packet, sizeof(send_packet), 0);
     }
 }
 int main()
@@ -363,7 +419,7 @@ int main()
         recv(new_socket, recv_packet, sizeof(commstruct), 0);
         printf("%d*()\n", recv_packet->port);
         thread_arg *ss_thread_arg = (thread_arg *)malloc(sizeof(thread_arg));
-
+        ss_thread_arg->nm_sock = new_socket;
         ss_thread_arg->port = recv_packet->port;
         ss_thread_arg->operation = recv_packet->operation;
         pthread_create(&client_thread, 0, thread_func, ss_thread_arg);

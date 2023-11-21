@@ -208,26 +208,36 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
                 exit(1);
             }
             printf("Connected to the server.\n");
+            int v = next_port;
             {
                 send_packet->port = next_port;
-                send_packet = recv_packet->operation;
-                strcpy(send_packet->data[0],recv_packet->data[0]);
-                strcpy(send_packet->data[1],recv_packet->data[1]);
+                send_packet->operation = recv_packet->operation;
+                printf(" Op: %d\n", send_packet->operation);
+                strcpy(send_packet->data[0], recv_packet->data[0]);
+                strcpy(send_packet->data[1], recv_packet->data[1]);
                 strcpy(send_packet->path, recv_packet->path);
+                strcpy(send_packet->fileflag, recv_packet->fileflag);
             }
             printf("***%d---\n", next_port);
+            // close(sock);
             send(sock, send_packet, sizeof(commstruct), 0);
             usleep(1000);
-            // close(sock);
             if (recv_packet->operation == Write || recv_packet->operation == Read || recv_packet->operation == Getsp)
             {
+
                 send(new_socket, send_packet, sizeof(commstruct), 0);
             }
-            else 
+            else
             {
-                send_packet->port = SSnode->client_port;
-                send(sock, send_packet, sizeof(commstruct), 0);
-                recv(sock,recv_packet,sizeof(commstruct),0);
+                printf("Priority\n");
+                printf(" Op: %d\n", send_packet->operation);
+                // send_packet->port = v;
+                int s = send(sock, send_packet, sizeof(commstruct), 0);
+                if (s <= 0)
+                    printf("Why\n");
+                int r = recv(sock, recv_packet, sizeof(commstruct), 0);
+                if (r <= 0)
+                    printf("Error in receiving ss_nm struct\n");
                 send_packet->ack = 1;
                 send(new_socket, send_packet, sizeof(commstruct), 0);
             }
