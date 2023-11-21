@@ -2,13 +2,23 @@
 
 StorageServerNode *head = NULL;
 
+typedef struct log {
+    char ip[16];
+    int port;
+    ErrorType error;
+    char command[1024];
+    char where[1024];
+}log;
+
 // head = NULL;
 
 int ss_count = 0;
 int next_port = NM_PORT + 1;
 pathToSS *Hashtable;
 pthread_t client_port_assigner;
-list* LRU;
+list *LRU;
+log* LOG;
+int logcount = 0;
 
 void find_new_port()
 {
@@ -161,29 +171,35 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
         fflush(stdout);
         int SSfound = -1;
         SSfound = pathExists(LRU, recv_packet->path);
-        
-        if (SSfound == -1){
+        int flag = 0;
+        if (SSfound == -1)
+        {
             printf("Cachemiss\n");
             SSfound = searchPathToSS(Hashtable, recv_packet->path);
             StorageServerNode *SSnode = findSS(SSfound);
-            if (SSnode == NULL){
-                // path not found
+            if (SSnode == NULL)
+            {
+                flag = 1;
+                SSfound = 0;
             }
-            details_node datanode;
-            datanode.SSnode = SSnode;
-            strcpy(datanode.path,recv_packet->path);
-            addNode(LRU, datanode);
-            SSfound =  pathExists(LRU, recv_packet->path);
-
+            else
+            {
+                details_node datanode;
+                datanode.SSnode = SSnode;
+                strcpy(datanode.path, recv_packet->path);
+                addNode(LRU, datanode);
+                SSfound = pathExists(LRU, recv_packet->path);
+            }
         }
-        else {
+        else
+        {
             printf("Cache Hit\n");
             StorageServerNode *SSnode = LRU->Details[SSfound].SSnode;
             details_node datanode;
             datanode.SSnode = SSnode;
-            strcpy(datanode.path,recv_packet->path);
-            removeNode(LRU,SSfound);
-            addNode(LRU,datanode);
+            strcpy(datanode.path, recv_packet->path);
+            removeNode(LRU, SSfound);
+            addNode(LRU, datanode);
         }
         printf("y\n");
         fflush(stdout);
@@ -197,8 +213,6 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
             printf("yy\n");
             fflush(stdout);
             StorageServerNode *SSnode = LRU->Details[SSfound].SSnode;
-            if (SSnode == NULL)
-                printf("oops\n");
             printf("yy\n");
             fflush(stdout);
             find_new_port();
@@ -220,7 +234,7 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
             printf("[+]TCP server socket created.\n");
             fflush(stdout);
             // Set up server address
-            printf("%d**\n", SSnode->client_port);
+            if (SSnode != NULL){printf("%d**\n", SSnode->client_port);
             memset(&addr, 0, sizeof(addr));
             addr.sin_family = AF_INET;
             addr.sin_port = htons(SSnode->client_port); // Use htons to convert to network byte order
@@ -232,10 +246,13 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
                 perror("[-]Connection error");
                 close(sock); // Close the socket
                 exit(1);
-            }
+            }}
             printf("Connected to the server.\n");
             int v = next_port;
             {
+                if (flag) {
+                    send_packet->error = SS_NOT_FOUND;
+                }
                 send_packet->port = next_port;
                 send_packet->operation = recv_packet->operation;
                 printf(" Op: %d\n", send_packet->operation);
@@ -246,6 +263,10 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
             }
             printf("***%d---\n", next_port);
             // close(sock);
+            if (flag) {
+                send(new_socket, send_packet, sizeof(commstruct), 0);
+                return NULL;
+            }
             send(sock, send_packet, sizeof(commstruct), 0);
             usleep(1000);
             if (recv_packet->operation == Write || recv_packet->operation == Read || recv_packet->operation == Getsp)
@@ -265,6 +286,10 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
                 if (r <= 0)
                     printf("Error in receiving ss_nm struct\n");
                 send_packet->ack = 1;
+                send_packet->error = recv_packet->error;
+                printf("ER: %d\n",recv_packet->error);
+                // strcpy(LOG[logcount].command,send_packet->operation);
+                
                 send(new_socket, send_packet, sizeof(commstruct), 0);
             }
             printf("loop done\n");
@@ -324,7 +349,6 @@ void handle_new_connection(int new_socket, commstruct *init_packet)
     return;
 }
 
-
 int main()
 {
     int server_fd, new_socket;
@@ -333,8 +357,9 @@ int main()
     socklen_t addrlen = sizeof(address);
     Hashtable = (pathToSS *)malloc(sizeof(pathToSS));
     pathToSS_init(Hashtable);
-    LRU = (list*)malloc(sizeof(list));
+    LRU = (list *)malloc(sizeof(list));
     initializeList(LRU);
+    LOG = (log*)malloc(sizeof(log)*1000);
     // Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {

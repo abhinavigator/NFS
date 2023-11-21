@@ -145,18 +145,21 @@ int main(int argc, char *argv[])
         }
         printf("b\n");
         int sock_SS_C = socket(AF_INET, SOCK_STREAM, 0);
-
-        if (sendstr->operation == Read || sendstr->operation == Write || sendstr->operation == Getsp)
-        {
-            recv(sock_NM_C, recvstr, sizeof(commstruct), 0);
-            printf("c\n");
-            // close(sock);
             if (sock_SS_C < 0)
             {
                 perror("[-]Socket error");
                 exit(1);
             }
             printf("[+]TCP server socket created.\n");
+        if (sendstr->operation == Read || sendstr->operation == Write || sendstr->operation == Getsp)
+        {
+            recv(sock_NM_C, recvstr, sizeof(commstruct), 0);
+            printf("c\n");
+            if (recvstr->error!= NO_ERROR){
+                printf ("ERROR: %d", recvstr->error);
+                exit(1);
+            }
+            
 
             // Set up server address
             usleep(1000);
@@ -215,11 +218,14 @@ int main(int argc, char *argv[])
             if (recv(sock_NM_C, ack1, sizeof(commstruct), 0) <= 0)
             {
                 printf("ERROR in receiving acknowledgement struct\n");
-                // Send acknowledgement if required over here
-                // continue;
+            }
+            else if (ack1->error != NO_ERROR){
+                printf ("ERROR: %d", ack1->error);
+                exit(1);
             }
             else
             {
+                printf ("ERROR: %d", ack1->error);
                 printf("Command successfully executed\n");
             }
         }

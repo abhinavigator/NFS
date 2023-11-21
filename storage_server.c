@@ -13,9 +13,9 @@
     int Writefunctionality(commstruct *C)
     {
         FILE *fptr = fopen(C->path, "w");
-        if (fptr < 0)
+        if (fptr == NULL )
         {
-            printf("Error in opening the file provided\n");
+            printf("Such a file doesn't exist\n");
             return 1;
         }
         fprintf(fptr, "%s", C->data[0]);
@@ -27,9 +27,9 @@
     int GetSPfunctionality(commstruct *C)
     {
         FILE *fptr = fopen(C->path, "r");
-        if (fptr < 0)
+        if (fptr == NULL)
         {
-            printf("Error in opening the file provided\n");
+            printf("Such a file doesn't exist\n");
             return 1;
         }
         fclose(fptr);
@@ -50,9 +50,9 @@
     int Readfunctionality(commstruct *C, int new_socket)
     {
         FILE *fptr = fopen(C->path, "r");
-        if (fptr < 0)
+        if (fptr == NULL)
         {
-            printf("Error in opening the file provided\n");
+            printf("Such a file doesn't exist\n");
             return 1;
         }
         fseek(fptr, 0, SEEK_END);
@@ -72,7 +72,7 @@
         while ((bytesRead = fread(C->data[0], 1, 99, fptr)) > 0)
         {
             C->data[0][bytesRead] = '\0'; // Null-terminate the buffer
-            printf("%s", C->data[0]);
+            // printf("%s", C->data[0]);
             int s = send(new_socket, C, sizeof(commstruct), 0);
             if (s < 0)
                 printf("Error sending data of file\n");
@@ -85,21 +85,38 @@
     {
         if (1)
         {
+            
+            char *cwd = malloc(sizeof(char) * 512);
+            getcwd(cwd, 512);
+            printf("%s\n", C->path);
+            if (chdir(C->path) < 0)
+            {
+                printf("Error - path doesn't exist;\n");
+                return 1;
+            }
+            FILE *fd = fopen(C->data[0], "r");
+            if (fd != NULL)
+            {
+                chdir(cwd);
+                printf("File already exist\n");
+                fclose(fd);
+                return 2;
+            }
             pid_t pid = fork();
             if (pid == -1)
             {
                 perror("fork");
                 exit(EXIT_FAILURE);
             }
-     
             if (pid == 0)
             {
                 // Child process
-                if (chdir(C->path) < 0)
-                    printf("Error changing directory\n");
+                
+                
                 if (strcmp(C->fileflag, "d") == 0)
                 {
-                    char *args[] = {"mkdir", C->data[0], NULL};
+     
+                    char *args[] = {"mkdir", "-p", C->data[0], NULL};
                     if (execvp(args[0], args) == -1)
                     {
                         perror("execvp");
@@ -109,26 +126,11 @@
                 else
                 {
                     int fd = open(C->data[0], O_CREAT | O_WRONLY | O_TRUNC, 0666);
-     
-                    if (fd == -1)
-                    {
-                        // Handle error if open fails
-                        perror("open");
-                        return 1; // Exit with an error code
-                    }
-     
-                    // Close the file descriptor
-                    close(fd);
-                    exit(0);
+                    chdir(cwd);
                 }
             }
-            else
-            {
-                int status;
-                waitpid(pid, &status, 0);
-                printf("File/Directory created successfully\n");
-                // Insert into hashtable
-                // To be done immediately
+            else {
+                chdir(cwd);
             }
         }
     }
@@ -136,6 +138,14 @@
     int Deletefunctionality(commstruct *C)
     {
         printf("In delete\n");
+        FILE *fd = fopen(C->path, "r");
+        if (fd == NULL)
+        {
+            printf("File doesn't exists\n");
+            return 1;
+        }
+        else
+            fclose(fd);
         pid_t pid = fork();
         if (pid == -1)
         {
@@ -145,12 +155,13 @@
         if (pid == 0)
         {
             // Child process
-            if(1)
+            if (1)
             {
                 char *argv[] = {"rm", "-rf", C->path, NULL};
-                printf("%s\n",C->path);
+                printf("%s\n", C->path);
                 // Execute the command using execvp
-                if (execvp("rm", argv) == -1) {
+                if (execvp("rm", argv) == -1)
+                {
                     perror("execvp");
                     return EXIT_FAILURE;
                 }
@@ -164,7 +175,6 @@
             // Delete from hashtable
             // To be done immediately
         }
-        
     }
      
     void *thread_func(void *SS_thread_arg)
@@ -175,6 +185,7 @@
         struct sockaddr_in address, claddr;
         socklen_t addrlen = sizeof(address);
         // Creating socket file descriptor
+        int flag = 0;
         if (arg->operation == Read || arg->operation == Write || arg->operation == Getsp)
         {
             if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -192,7 +203,7 @@
             address.sin_family = AF_INET;
             address.sin_addr.s_addr = inet_addr(IP);
             address.sin_port = htons(arg->port);
-            printf("%d\n", arg->port);
+            printf("%d[]\n", arg->port);
      
             // Bind the socket to the address and port
             if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
@@ -230,6 +241,7 @@
      
                 if (recv_packet->operation == Write)
                 {
+                    printf("Here\n");
                     if (Writefunctionality(recv_packet) == 0)
                     {
                         commstruct *C = commstruct_init();
@@ -247,10 +259,16 @@
                     else
                     {
                         printf("Error-File path doesnt exist\n");
+                        flag = 1;
+                        recv_packet->error = FILE_NOT_FOUND;
+                        int s = send(new_socket, recv_packet, sizeof(commstruct), 0);
+     
                     }
                 }
                 else if (recv_packet->operation == Getsp)
                 {
+                    printf("Here\n");
+     
                     if (GetSPfunctionality(recv_packet) == 0)
                     {
                         printf("Works\n");
@@ -258,6 +276,7 @@
                         int s = send(new_socket, recv_packet, sizeof(commstruct), 0);
                         if (s < 0)
                         {
+     
                             printf("Error sending struct to client\n");
                         }
                         else
@@ -268,10 +287,15 @@
                     else
                     {
                         printf("Error in executing command\n");
+                        flag = 1;
+                        recv_packet->error = FILE_NOT_FOUND;
+                        int s = send(new_socket, recv_packet, sizeof(commstruct), 0);
                     }
                 }
                 else if (recv_packet->operation == Read)
                 {
+                    printf("Here\n");
+     
                     if (Readfunctionality(recv_packet, new_socket) == 0)
                     {
                         commstruct *C = commstruct_init();
@@ -289,6 +313,9 @@
                     else
                     {
                         printf("Error-File path doesnt exist\n");
+                        flag = 1;
+                        recv_packet->error = FILE_NOT_FOUND;
+                        int s = send(new_socket, recv_packet, sizeof(commstruct), 0);
                     }
                 }
                 break;
@@ -296,25 +323,35 @@
         }
         else
         {
-            printf("Create\n");
             int sock = arg->nm_sock;
             commstruct *send_packet = commstruct_init(), *recv_packet = commstruct_init();
             recv(sock, recv_packet, sizeof(commstruct), 0);
-            printf("Op: %d", recv_packet->operation);
             if (recv_packet->operation == Delete)
             {
-                Deletefunctionality(recv_packet);
+                flag = Deletefunctionality(recv_packet);
                 printf("Deletion completed\n");
             }
             else if (recv_packet->operation == Create)
             {
                 printf("Create inside\n");
-                Createfunctionality(recv_packet);
+                flag = Createfunctionality(recv_packet);
             }
             else if (recv_packet->operation == Copy)
             {
             }
             send_packet->ack = 1;
+            if (flag != 0)
+            {
+                if (flag == 1)
+                {
+                    send_packet->error = FILE_NOT_FOUND;
+                }
+                if (flag == 2)
+                {
+                    printf("oop\n");
+                    send_packet->error = ALREADY_EXISTS;
+                }
+            }
             send(sock, send_packet, sizeof(send_packet), 0);
         }
     }
