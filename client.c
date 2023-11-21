@@ -142,11 +142,12 @@ int main(int argc, char *argv[])
             exit(1);
         }
         printf("b\n");
+        int sock_SS_C = socket(AF_INET, SOCK_STREAM, 0);
+
         if (sendstr->operation == Create || sendstr->operation == Write || sendstr->operation == Getsp){
             recv(sock_NM_C, recvstr, sizeof(commstruct), 0);
             printf("c\n");
             // close(sock);
-            int sock_SS_C = socket(AF_INET, SOCK_STREAM, 0);
             if (sock_SS_C < 0)
             {
                 perror("[-]Socket error");
