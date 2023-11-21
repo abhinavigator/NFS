@@ -56,8 +56,9 @@ StorageServerNode *findSS(int num)
     StorageServerNode *it = head;
     while (it != NULL)
     {
-        printf("%d\n",it->ss_num);
-        if (it->ss_num == num) break;
+        printf("%d\n", it->ss_num);
+        if (it->ss_num == num)
+            break;
         it = it->next;
     }
     return it;
@@ -148,11 +149,11 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
         perror("listen");
         exit(EXIT_FAILURE);
     }
+    new_socket = accept(server_fd, (struct sockaddr *)&claddr, (socklen_t *)&addrlen);
     while (1)
     {
         printf("hi\n");
         printf("%d\n", arg->port);
-        new_socket = accept(server_fd, (struct sockaddr *)&claddr, (socklen_t *)&addrlen);
         commstruct *send_packet = commstruct_init(), *recv_packet = commstruct_init();
         recv(new_socket, recv_packet, sizeof(commstruct), 0);
         printf("zzzz\n");
@@ -170,7 +171,8 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
             printf("yy\n");
             fflush(stdout);
             StorageServerNode *SSnode = findSS(SSfound);
-            if (SSnode == NULL) printf("oops\n");
+            if (SSnode == NULL)
+                printf("oops\n");
             printf("yy\n");
             fflush(stdout);
             find_new_port();
@@ -178,7 +180,6 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
             struct sockaddr_in addr;
             socklen_t addr_size;
             int n;
-
 
             // Create socket
             printf("yy\n");
@@ -207,17 +208,34 @@ void *Clfunc(void *SS_thread_arg) // TO BE COMPLETED
                 exit(1);
             }
             printf("Connected to the server.\n");
-            send_packet->port = next_port;
+            {
+                send_packet->port = next_port;
+                send_packet = recv_packet->operation;
+                strcpy(send_packet->data[0],recv_packet->data[0]);
+                strcpy(send_packet->data[1],recv_packet->data[1]);
+                strcpy(send_packet->path, recv_packet->path);
+            }
             printf("***%d---\n", next_port);
             send(sock, send_packet, sizeof(commstruct), 0);
             usleep(1000);
             // close(sock);
-            send(new_socket, send_packet, sizeof(commstruct), 0);
+            if (recv_packet->operation == Write || recv_packet->operation == Read || recv_packet->operation == Getsp)
+            {
+                send(new_socket, send_packet, sizeof(commstruct), 0);
+            }
+            else 
+            {
+                send_packet->port = SSnode->client_port;
+                send(sock, send_packet, sizeof(commstruct), 0);
+                recv(sock,recv_packet,sizeof(commstruct),0);
+                send_packet->ack = 1;
+                send(new_socket, send_packet, sizeof(commstruct), 0);
+            }
             printf("loop done\n");
             close(sock);
         }
-        close(new_socket);
     }
+    close(new_socket);
     return NULL;
 }
 // Function to handle new connections, assume it can differentiate between SS and client

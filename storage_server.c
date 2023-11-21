@@ -1,31 +1,33 @@
 #include "headers.h"
 #include "storage_server.h"
 
-
 pthread_t client_thread;
 
-typedef struct thread_arg {
-    int port;
-}thread_arg;
-
-int Writefunctionality(commstruct * C)
+typedef struct thread_arg
 {
-    FILE *fptr=fopen(C->path,"w");
-    if(fptr<0)
+    int port;
+    OperationType operation;
+    int nm_sock;
+} thread_arg;
+
+int Writefunctionality(commstruct *C)
+{
+    FILE *fptr = fopen(C->path, "w");
+    if (fptr < 0)
     {
         printf("Error in opening the file provided\n");
         return 1;
     }
-    fprintf(fptr,"%s",C->data[0]);
+    fprintf(fptr, "%s", C->data[0]);
     fclose(fptr);
     printf("Data successfully written\n");
     return 0;
 }
 
-int GetSPfunctionality(commstruct * C)
+int GetSPfunctionality(commstruct *C)
 {
-    FILE *fptr=fopen(C->path,"r");
-    if(fptr<0)
+    FILE *fptr = fopen(C->path, "r");
+    if (fptr < 0)
     {
         printf("Error in opening the file provided\n");
         return 1;
@@ -45,10 +47,10 @@ int GetSPfunctionality(commstruct * C)
     return 0;
 }
 
-int Readfunctionality(commstruct * C,int new_socket)
+int Readfunctionality(commstruct *C, int new_socket)
 {
-    FILE *fptr=fopen(C->path,"r");
-    if(fptr<0)
+    FILE *fptr = fopen(C->path, "r");
+    if (fptr < 0)
     {
         printf("Error in opening the file provided\n");
         return 1;
@@ -56,151 +58,170 @@ int Readfunctionality(commstruct * C,int new_socket)
     fseek(fptr, 0, SEEK_END);
     int fileSize = ftell(fptr);
     fseek(fptr, 0, SEEK_SET);
-    int iterations=fileSize/99;
-    if(fileSize%99)
+    int iterations = fileSize / 99;
+    if (fileSize % 99)
         iterations++;
-    C->filesize=iterations;
-    int s=send(new_socket,C, sizeof(commstruct), 0);
-    if(s<0)
+    C->filesize = iterations;
+    int s = send(new_socket, C, sizeof(commstruct), 0);
+    if (s < 0)
     {
         printf("Error sending size of file\n");
         return 1;
     }
     size_t bytesRead;
-    while ((bytesRead = fread(C->data[0], 1, 99, fptr)) > 0) 
+    while ((bytesRead = fread(C->data[0], 1, 99, fptr)) > 0)
     {
-        C->data[0][bytesRead] = '\0';  // Null-terminate the buffer
+        C->data[0][bytesRead] = '\0'; // Null-terminate the buffer
         printf("%s", C->data[0]);
-        int s=send(new_socket,C, sizeof(commstruct), 0);
-        if(s<0)
+        int s = send(new_socket, C, sizeof(commstruct), 0);
+        if (s < 0)
             printf("Error sending data of file\n");
     }
     fclose(fptr);
     return 0;
 }
 
-
-
-void *thread_func(void *SS_thread_arg) 
+void *thread_func(void *SS_thread_arg)
 {
-    SSthread_arg *arg = (SSthread_arg *)SS_thread_arg;
+    thread_arg *arg = (thread_arg *)SS_thread_arg;
     int server_fd, new_socket;
     struct sockaddr_in address, claddr;
     socklen_t addrlen = sizeof(address);
     // Creating socket file descriptor
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    if (arg->operation == Read || arg->operation == Write || arg->operation == Getsp)
     {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Forcefully attaching socket to the port 12345
-    // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-    //     perror("setsockopt");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(IP);
-    address.sin_port = htons(arg->port);
-    printf("%d\n",arg->port);
-
-    // Bind the socket to the address and port
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
-    {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
-    }
-    printf("bind done\n");
-    // Listen for incoming connections
-    if (listen(server_fd, 10) < 0)
-    { // 10 is the maximum size of the pending connections queue
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-    while (1) {
-        new_socket = accept(server_fd, (struct sockaddr *)&claddr, (socklen_t *)&addrlen);
-        if (new_socket < 0)
+        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
         {
-            perror("accept");
-            continue;
+            perror("socket failed");
+            exit(EXIT_FAILURE);
         }
-        printf ("hi\n");
+
+        // Forcefully attaching socket to the port 12345
+        // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        //     perror("setsockopt");
+        //     exit(EXIT_FAILURE);
+        // }
+
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = inet_addr(IP);
+        address.sin_port = htons(arg->port);
+        printf("%d\n", arg->port);
+
+        // Bind the socket to the address and port
+        if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+        {
+            perror("bind failed");
+            exit(EXIT_FAILURE);
+        }
+        printf("bind done\n");
+        // Listen for incoming connections
+        if (listen(server_fd, 10) < 0)
+        { // 10 is the maximum size of the pending connections queue
+            perror("listen");
+            exit(EXIT_FAILURE);
+        }
+        while (1)
+        {
+            new_socket = accept(server_fd, (struct sockaddr *)&claddr, (socklen_t *)&addrlen);
+            if (new_socket < 0)
+            {
+                perror("accept");
+                continue;
+            }
+            printf("hi\n");
+            commstruct *send_packet = commstruct_init(), *recv_packet = commstruct_init();
+
+            // usleep(1000);
+            if (recv(new_socket, recv_packet, sizeof(commstruct), 0) <= 0)
+            {
+                printf("ERROR in receiving struct\n");
+                // Send acknowledgement if required over here
+                continue;
+            }
+            printf("Done!!!\n");
+            // comparing teh operation with the available operations
+
+            if (recv_packet->operation == Write)
+            {
+                if (Writefunctionality(recv_packet) == 0)
+                {
+                    commstruct *C = commstruct_init();
+                    C->ack = 1;
+                    int s = send(new_socket, recv_packet, sizeof(commstruct), 0);
+                    if (s < 0)
+                    {
+                        printf("Error sending struct to client\n");
+                    }
+                    else
+                    {
+                        "Works\n";
+                    }
+                }
+                else
+                {
+                    printf("Error-File path doesnt exist\n");
+                }
+            }
+            else if (recv_packet->operation == Getsp)
+            {
+                if (GetSPfunctionality(recv_packet) == 0)
+                {
+                    printf("Works\n");
+                    recv_packet->ack = 1;
+                    int s = send(new_socket, recv_packet, sizeof(commstruct), 0);
+                    if (s < 0)
+                    {
+                        printf("Error sending struct to client\n");
+                    }
+                    else
+                    {
+                        "Works\n";
+                    }
+                }
+                else
+                {
+                    printf("Error in executing command\n");
+                }
+            }
+            else if (recv_packet->operation == Read)
+            {
+                if (Readfunctionality(recv_packet, new_socket) == 0)
+                {
+                    commstruct *C = commstruct_init();
+                    C->ack = 1;
+                    int s = send(new_socket, recv_packet, sizeof(commstruct), 0);
+                    if (s < 0)
+                    {
+                        printf("Error sending struct to client\n");
+                    }
+                    else
+                    {
+                        "Works\n";
+                    }
+                }
+                else
+                {
+                    printf("Error-File path doesnt exist\n");
+                }
+            }
+        }
+    }
+    else 
+    {
+        int sock = arg->nm_sock;
         commstruct *send_packet = commstruct_init(), *recv_packet = commstruct_init();
+        recv(sock,send_packet, sizeof(commstruct),0);
+        if (recv_packet->operation == Delete) {
 
-        // usleep(1000);
-        if(recv(new_socket, recv_packet, sizeof(commstruct), 0)<=0)
-        {
-            printf("ERROR in receiving struct\n");
-            // Send acknowledgement if required over here
-            continue;
         }
-        printf("Done!!!\n");
-        // comparing teh operation with the available operations
+        else if (recv_packet->operation == Create) {
 
-        if(recv_packet->operation==Write)
-        {
-            if(Writefunctionality(recv_packet)==0)
-            {
-                commstruct *C=commstruct_init();
-                C->ack=1;
-                int s=send(new_socket,recv_packet, sizeof(commstruct), 0);
-                if(s<0)
-                {
-                    printf("Error sending struct to client\n");
-                }
-                else
-                {
-                    "Works\n";
-                }
-            }
-            else
-            {
-                printf("Error-File path doesnt exist\n");
-            }
         }
-        else if(recv_packet->operation==Getsp)
-        {
-            if(GetSPfunctionality(recv_packet)==0)
-            {
-                printf("Works\n");
-                recv_packet->ack=1;
-                int s=send(new_socket,recv_packet, sizeof(commstruct), 0);
-                if(s<0)
-                {
-                    printf("Error sending struct to client\n");
-                }
-                else
-                {
-                    "Works\n";
-                }
-            }
-            else
-            {
-                printf("Error in executing command\n");
-            }
+        else if (recv_packet->operation == Copy){
+
         }
-        else if(recv_packet->operation==Read)
-        {
-            if(Readfunctionality(recv_packet,new_socket)==0)
-            {
-                commstruct *C=commstruct_init();
-                C->ack=1;
-                int s=send(new_socket,recv_packet, sizeof(commstruct), 0);
-                if(s<0)
-                {
-                    printf("Error sending struct to client\n");
-                }
-                else
-                {
-                    "Works\n";
-                }
-            }
-            else
-            {
-                printf("Error-File path doesnt exist\n");
-            }
-        }
+        send_packet->ack = 1;
+        send(sock,send_packet,sizeof(send_packet),0);
     }
 }
 int main()
@@ -225,11 +246,11 @@ int main()
     printf("[+]TCP server socket created.\n");
 
     // Set up server address
-    memset(&addr,0, sizeof(addr));
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(NM_PORT); // Use htons to convert to network byte order
     addr.sin_addr.s_addr = inet_addr(IP);
-    inet_pton(AF_INET,IP,&addr.sin_addr);
+    inet_pton(AF_INET, IP, &addr.sin_addr);
     // Connect to the server
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
@@ -256,7 +277,7 @@ int main()
         scanf("%s", sendstr->data[i]);
     }
     printf("%d\n", sendstr->num_args);
-    
+
     // scanf("%s", buffer);
     // if (send(sock,buffer,strlen(buffer)+1,0));
     if (send(sock, sendstr, sizeof(commstruct), 0) < 0)
@@ -267,7 +288,7 @@ int main()
     }
     printf("%d\n", sendstr->num_args);
 
-    recv(sock, recvstr, sizeof(commstruct), 0);   
+    recv(sock, recvstr, sizeof(commstruct), 0);
     close(sock);
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0)
@@ -276,13 +297,13 @@ int main()
         exit(1);
     }
     printf("[+]TCP server socket created.\n");
-    
+
     // Set up server address
     addr.sin_family = AF_INET;
     addr.sin_port = htons(recvstr->port); // Use htons to convert to network byte order
     addr.sin_addr.s_addr = inet_addr(IP);
-    printf("%d\n",recvstr->port);
-    inet_pton(AF_INET,IP,&addr.sin_addr);
+    printf("%d\n", recvstr->port);
+    inet_pton(AF_INET, IP, &addr.sin_addr);
     usleep(1000);
     // Connect to the server
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
@@ -296,9 +317,10 @@ int main()
     int server_fd1, new_socket1;
     struct sockaddr_in address1;
     socklen_t addrlen1 = sizeof(address1);
-        struct sockaddr_in claddr1;
+    struct sockaddr_in claddr1;
     // Creating socket file descriptor
-    if ((server_fd1 = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    if ((server_fd1 = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
@@ -307,25 +329,28 @@ int main()
     // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
     //     perror("setsockopt");
     //     exit(EXIT_FAILURE);
-    // } 
+    // }
 
     address1.sin_family = AF_INET;
     address1.sin_addr.s_addr = inet_addr(IP);
     address1.sin_port = htons(recvstr->port2);
-    printf("%d\n",recvstr->port2);
+    printf("%d\n", recvstr->port2);
 
     // Bind the socket to the address and port
-    if (bind(server_fd1, (struct sockaddr *)&address1, sizeof(address1)) < 0) {
+    if (bind(server_fd1, (struct sockaddr *)&address1, sizeof(address1)) < 0)
+    {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
     printf("bind done\n");
     // Listen for incoming connections
-    if (listen(server_fd1, 10) < 0) { // 10 is the maximum size of the pending connections queue
+    if (listen(server_fd1, 10) < 0)
+    { // 10 is the maximum size of the pending connections queue
         perror("listen");
         exit(EXIT_FAILURE);
     }
-    while (1){
+    while (1)
+    {
         int new_socket;
         new_socket = accept(server_fd1, (struct sockaddr *)&claddr1, (socklen_t *)&addrlen1);
         commstruct *send_packet = commstruct_init(), *recv_packet = commstruct_init();
@@ -336,11 +361,12 @@ int main()
             continue;
         }
         recv(new_socket, recv_packet, sizeof(commstruct), 0);
-        printf("%d*()\n",recv_packet->port);
+        printf("%d*()\n", recv_packet->port);
         thread_arg *ss_thread_arg = (thread_arg *)malloc(sizeof(thread_arg));
-        ss_thread_arg->port = recv_packet->port;
-        pthread_create(&client_thread, 0, thread_func, ss_thread_arg);
 
+        ss_thread_arg->port = recv_packet->port;
+        ss_thread_arg->operation = recv_packet->operation;
+        pthread_create(&client_thread, 0, thread_func, ss_thread_arg);
     }
     close(sock);
     return 0;
